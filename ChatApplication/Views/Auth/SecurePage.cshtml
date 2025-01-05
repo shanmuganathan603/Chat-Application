@@ -1,0 +1,8 @@
+﻿@model IEnumerable<ChatApplication.Models.User>
+<h4>Hello @ViewBag.Name</h4>
+@foreach (var item in Model)
+{
+    <li>
+        @item.Username
+    </li>
+}

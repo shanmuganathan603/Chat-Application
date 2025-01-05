@@ -1,0 +1,44 @@
+﻿@{
+    ViewData["Title"] = "Home Page";
+}
+
+<div class="container">
+    <div>
+        <h2>Connected Users</h2>
+        <ul id="userList"></ul>
+    </div>
+
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/@@microsoft/signalr@5.0.0/dist/browser/signalr.js"></script>
+
+<script>
+    var connection = new signalR.HubConnectionBuilder().withUrl("/signalingHub").build();
+
+    connection.start().catch(function (err) {
+        return console.error(err.toString());
+    });
+
+
+    document.getElementById("sendmessage").addEventListener("click", function (event) {
+
+        // var user = document.getElementById("displayname").value;
+        // var message = document.getElementById("message").value;
+
+        connection.invoke("SendMessage", user, message).catch(function (err) {
+            return console.error(err.toString());
+        });
+
+        event.preventDefault();
+
+    });
+
+    connection.on("ReceiveMessage", function (user, message) {
+
+        var encodingMsg = user + ": " + message;
+        var li = document.createElement("li");
+
+        li.textContent = encodingMsg;
+        // document.getElementById("discussion").appendChild(li);
+    });
+</script>
