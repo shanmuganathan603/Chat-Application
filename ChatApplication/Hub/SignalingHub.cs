@@ -8,22 +8,22 @@ namespace WebApplication1.Hubs
 
         public override Task OnConnectedAsync()
         {
-            Usernames.Add(Context.ConnectionId, Context.User.Identity.Name);
+            Usernames.Add(Context.User.Identity.Name, Context.ConnectionId);
             return base.OnConnectedAsync();
         }
 
         public override Task OnDisconnectedAsync(Exception? exception)
         {
-            Usernames.Remove(Context.ConnectionId);
+            Usernames.Remove(Context.User.Identity.Name);
             return base.OnDisconnectedAsync(exception);
         }
         public async Task GetUsernames()
         {
-            
+
         }
         public async Task SendMessage(string user, string message)
         {
-            await Clients.All.SendAsync("ReceiveMessage", user, message);
+            await Clients.Client(Usernames[user]).SendAsync("ReceiveMessage", message);
         }
     }
 }

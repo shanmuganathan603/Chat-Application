@@ -2,7 +2,208 @@
 <h4>Hello @ViewBag.Name</h4>
 @foreach (var item in Model)
 {
-    <li>
+    <button onclick="startChat('@item.Username')">
         @item.Username
-    </li>
+    </button>
 }
+
+<style>
+    /* Basic Reset */
+    * {
+        margin: 0;
+        padding: 0;
+        box-sizing: border-box;
+    }
+
+    html, body {
+        font-family: Arial, sans-serif;
+        height: 100%;
+        background-color: #f2f2f2;
+    }
+
+    .chat-container {
+        max-width: 600px;
+        width: 100%;
+        height: 90%;
+        background-color: white;
+        border-radius: 8px;
+        box-shadow: 0px 0px 10px rgba(0, 0, 0, 0.1);
+        display: flex;
+        flex-direction: column;
+        overflow: hidden;
+        margin: 20px auto;
+    }
+
+    .chat-header {
+        background-color: #4CAF50;
+        color: white;
+        padding: 15px;
+        text-align: center;
+        font-size: 18px;
+        font-weight: bold;
+    }
+
+    .chat-body {
+        flex: 1;
+        overflow-y: auto;
+        padding: 10px;
+        background-color: #f9f9f9;
+        max-height: 350px;
+    }
+
+    .message-container {
+        display: flex;
+        flex-direction: column;
+        gap: 10px;
+        height: 100%;
+    }
+
+    .message {
+        max-width: 80%;
+        padding: 10px;
+        border-radius: 5px;
+        background-color: #f1f1f1;
+        align-self: flex-start;
+        word-wrap: break-word;
+    }
+
+        /* Styling for the messages */
+        .message.sent {
+            background-color: #4CAF50; /* Green for the sent messages */
+            color: white;
+            align-self: flex-end; /* Align to the right */
+        }
+
+        .message.received {
+            background-color: #e0e0e0; /* Light grey for received messages */
+            color: black;
+            align-self: flex-start; /* Align to the left */
+        }
+
+    .chat-footer {
+        display: flex;
+        padding: 10px;
+        background-color: #eee;
+    }
+
+        .chat-footer input {
+            width: 80%;
+            padding: 10px;
+            font-size: 14px;
+            border: 1px solid #ccc;
+            border-radius: 5px;
+        }
+
+        .chat-footer button {
+            padding: 10px 15px;
+            margin-left: 10px;
+            background-color: #4CAF50;
+            color: white;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+        }
+
+            .chat-footer button:hover {
+                background-color: #45a049;
+            }
+
+    .chat-container.hidden {
+        display: none;
+    }
+</style>
+
+<div class="chat-container" id="chat-container">
+    <div class="chat-header" id="chat-header">
+        <!-- The username of the current user will be shown here -->
+    </div>
+
+    <div class="chat-body">
+        <div class="message-container" id="message-container">
+            <!-- Messages will appear here -->
+        </div>
+    </div>
+
+    <div class="chat-footer">
+        <input type="text" id="message-input" placeholder="Type a message..." autofocus />
+        <button onclick="sendMessage()">Send</button>
+    </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/@@microsoft/signalr@5.0.0/dist/browser/signalr.js"></script>
+<script>
+    // Initialize SignalR connection
+    var connection = new signalR.HubConnectionBuilder().withUrl("/signalingHub").build();
+
+    connection.start().catch(function (err) {
+        return console.error(err.toString());
+    });
+
+    document.getElementById("chat-container").hidden = true;
+
+    // Start chat with a user
+    function startChat(username) {
+        // Set the header to show the username of the person the user is chatting with
+        var header = document.getElementById("chat-header");
+        header.innerText = "Chatting with " + username;
+
+        // Show the chat container
+        document.getElementById("chat-container").hidden = false;
+
+        // Save the username for sending and receiving messages
+        window.currentChatUser = username;
+    }
+
+    // Send a message to the chat
+    function sendMessage() {
+        var input = document.getElementById("message-input");
+        var messageText = input.value.trim();
+
+        if (messageText === "") {
+            return;
+        }
+
+        // Create a new message element for sent messages
+        var messageElement = document.createElement("div");
+        messageElement.classList.add("message", "sent");
+        messageElement.textContent = messageText;
+
+        // Append the new message to the message container
+        var messageContainer = document.getElementById("message-container");
+        messageContainer.appendChild(messageElement);
+
+        // Scroll to the bottom of the chat
+        messageContainer.scrollTop = messageContainer.scrollHeight;
+
+        // Clear the input field
+        input.value = "";
+        input.focus();
+
+        // Send the message to the server using SignalR
+        connection.invoke("SendMessage", window.currentChatUser, messageText).catch(function (err) {
+            return console.error(err.toString());
+        });
+    }
+
+    // Listen for incoming messages
+    connection.on("ReceiveMessage", function (message) {
+        // Create a new message element for received messages
+        var messageElement = document.createElement("div");
+        messageElement.classList.add("message", "received");
+        messageElement.textContent = message;
+
+        // Append the received message to the message container
+        var messageContainer = document.getElementById("message-container");
+        messageContainer.appendChild(messageElement);
+
+        // Scroll to the bottom of the chat
+        messageContainer.scrollTop = messageContainer.scrollHeight;
+    });
+
+    // Allow the user to press "Enter" to send a message
+    document.getElementById("message-input").addEventListener("keypress", function (event) {
+        if (event.key === "Enter") {
+            sendMessage();
+        }
+    });
+</script>
