@@ -1,0 +1,233 @@
+﻿@{
+    Layout = null;
+}
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Chat Application</title>
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600&display=swap" rel="stylesheet">
+    <style>
+        body {
+            font-family: 'Poppins', sans-serif;
+            margin: 0;
+            padding: 0;
+            background-color: #fff;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+        }
+
+        .chat-container {
+            width: 600px;
+            background-color: #fff;
+            border-radius: 8px;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+            display: flex;
+            flex-direction: column;
+        }
+
+        .chat-header {
+            background-color: #4CAF50;
+            color: white;
+            padding: 15px;
+            font-size: 18px;
+            text-align: center;
+            border-radius: 8px 8px 0 0;
+        }
+
+        .chat-area {
+            flex-grow: 1;
+            padding: 20px 15px;
+            overflow-y: auto;
+            min-height: 77vh;
+            max-height: 78vh;
+            border-bottom: 1px solid #ddd;
+            display: flex;
+            flex-direction: column;
+            gap: 5px;
+        }
+
+        .message {
+            display: flex;
+            flex-direction: column;
+        }
+
+            .message .sender {
+                font-weight: 600;
+            }
+
+            .message .content {
+                margin-top: 5px;
+                background-color: #f1f1f1;
+                padding: 10px;
+                border-radius: 8px;
+                max-width: 75%;
+            }
+
+            /* Sent message styling (right side) */
+            .message.sent .content {
+                background-color: #4CAF50;
+                color: white;
+                align-self: flex-end; /* Align right */
+            }
+
+            /* Received message styling (left side) */
+            .message.received .content {
+                background-color: #e1e1e1;
+                color: black;
+                align-self: flex-start; /* Align left */
+            }
+
+        .chat-input {
+            display: flex;
+            padding: 10px;
+            background-color: #f9f9f9;
+            border-radius: 0 0 8px 8px;
+        }
+
+            .chat-input input {
+                width: 60%;
+                padding: 10px;
+                border: 1px solid #ddd;
+                border-radius: 20px;
+                font-size: 14px;
+                outline: none;
+            }
+
+            .chat-input button {
+                width: 15%;
+                background-color: #4CAF50;
+                color: white;
+                padding: 10px;
+                border: none;
+                border-radius: 20px;
+                cursor: pointer;
+                font-size: 14px;
+                margin-left: 2%;
+                margin-right: 2%;
+            }
+
+                .chat-input button:hover {
+                    background-color: #45a049;
+                }
+    </style>
+</head>
+<body>
+
+    <div class="chat-container">
+        <div class="chat-header" id="chat-header">
+            Random Chat
+        </div>
+        <div class="chat-area" id="chatArea">
+            <!-- Chat messages will be dynamically added here -->
+        </div>
+        <div class="chat-input">
+            <button id="startOrLeaveButton" value="Start"></button>
+            <input type="text" id="messageInput" placeholder="Type a message..." autofocus />
+            <button id="sendButton">Send</button>
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/@@microsoft/signalr@5.0.0/dist/browser/signalr.js"></script>
+    <script>
+        let userName = null;
+        var chatHeader = document.getElementById('chat-header');
+        var chatArea = document.getElementById('chatArea');
+        var startOrLeaveButton = document.getElementById('startOrLeaveButton');
+        var connection = new signalR.HubConnectionBuilder().withUrl("/signalingHub").build();
+
+        connection.start()
+            .then(function () {
+                // Now the connection is established, safely call ConnectRandomUser
+                connection.invoke("ConnectRandomUser")
+                    .catch(function (err) {
+                        return console.error("Error invoking ConnectRandomUser: " + err.toString());
+                    });
+            })
+            .catch(function (err) {
+                return console.error("Connection failed: " + err.toString());
+            });
+
+        document.getElementById('sendButton').addEventListener('click', function () {
+            var messageInput = document.getElementById('messageInput');
+            var messageText = messageInput.value.trim();
+
+            if (messageText !== '' && userName != null) {
+                var messageContainer = document.createElement('div');
+                messageContainer.classList.add('message', 'sent');
+                var messageContent = document.createElement('div');
+                messageContent.classList.add('content');
+                messageContent.innerHTML = messageText;
+                messageContainer.appendChild(messageContent);
+                chatArea.appendChild(messageContainer);
+                chatArea.scrollTop = chatArea.scrollHeight;
+                messageInput.value = '';
+                connection.invoke("SendMessage", userName, messageText).catch(function (err) {
+                    return console.error(err.toString());
+                });
+            }
+        });
+        document.getElementById('messageInput').addEventListener('keydown', function (e) {
+            if (e.key === 'Enter') {
+                document.getElementById('sendButton').click();
+            }
+        });
+
+        connection.on("ReceiveMessage", function (message) {
+            var messageContainer = document.createElement('div');
+            messageContainer.classList.add('message', 'received');
+            var messageContent = document.createElement('div');
+            messageContent.classList.add('content');
+            messageContent.innerHTML = message;
+            messageContainer.appendChild(messageContent);
+            var chatArea = document.getElementById('chatArea');
+            chatArea.appendChild(messageContainer);
+            chatArea.scrollTop = chatArea.scrollHeight;
+        });
+
+        connection.on("ConnectedRandomChat", function(user)
+        {
+            chatHeader.innerHTML = "Chat with " + user;
+            startOrLeaveButton.value = "Leave";
+            startOrLeaveButton.textContent = "Leave";
+            while (chatArea.firstChild) {
+                chatArea.removeChild(chatArea.firstChild);
+            }
+            userName = user;
+        })
+
+        connection.on("DisconnectedRandomChat", function() 
+        {
+            chatHeader.innerHTML = "Random Chat";
+            startOrLeaveButton.value = "Start";
+            startOrLeaveButton.textContent = "Start";
+            userName = null;
+        })
+
+        document.getElementById('startOrLeaveButton').addEventListener('click', function () {
+            if (startOrLeaveButton.value === "Leave") {
+                startOrLeaveButton.value == "Start"
+                startOrLeaveButton.textContent = "Start";
+                connection.invoke("DisconnectChat").catch(function (err) {
+                    return console.error(err.toString());
+                });
+                chatHeader.innerHTML = "Random Chat";
+                userName = null;
+            }
+            else {
+                startOrLeaveButton.value == "Leave"
+                startOrLeaveButton.textContent = "Leave";
+                connection.invoke("ConnectRandomUser")
+                    .catch(function (err) {
+                        return console.error("Error invoking ConnectRandomUser: " + err.toString());
+                    });
+            }
+        })
+    </script>
+
+</body>
+</html>

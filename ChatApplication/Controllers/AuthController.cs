@@ -125,5 +125,13 @@ namespace ChatApplication.Controllers
             usernames.Remove(_userContext.Users.Where(x => x.Username == HttpContext.User.Identity.Name).FirstOrDefault());
             return View(usernames);
         }
+
+        [Route("Random-Chat")]
+        [Authorize]
+        public IActionResult RandomChat()
+        {
+            ViewBag.Name = HttpContext.User.Identity.Name;
+            return View();
+        }
     }
 }

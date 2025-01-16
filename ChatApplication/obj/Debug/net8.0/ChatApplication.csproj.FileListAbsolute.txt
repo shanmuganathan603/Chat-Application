@@ -282,3 +282,4 @@ C:\Users\shanm\source\repos\ChatApplication\ChatApplication\bin\Debug\net8.0\run
 C:\Users\shanm\source\repos\ChatApplication\ChatApplication\bin\Debug\net8.0\runtimes\win\lib\net7.0\System.Drawing.Common.dll
 C:\Users\shanm\source\repos\ChatApplication\ChatApplication\bin\Debug\net8.0\runtimes\win\lib\net7.0\System.Security.Cryptography.ProtectedData.dll
 C:\Users\shanm\source\repos\ChatApplication\ChatApplication\bin\Debug\net8.0\runtimes\win\lib\net7.0\System.Windows.Extensions.dll
+C:\Users\shanm\source\repos\ChatApplication\ChatApplication\obj\Debug\net8.0\ChatApplication.sourcelink.json
